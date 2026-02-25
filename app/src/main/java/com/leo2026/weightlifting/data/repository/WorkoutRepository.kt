@@ -8,12 +8,17 @@ class WorkoutRepository(
     private val exerciseDao: ExerciseDao,
     private val workoutDao: WorkoutDao,
     private val templateDao: TemplateDao,
-    private val assetDao: AssetDao
+    private val assetDao: AssetDao,
+    private val userDao: UserDao
 ) {
     val allExercises: Flow<List<ExerciseEntity>> = exerciseDao.getAllExercises()
     val completedSessions: Flow<List<WorkoutSessionEntity>> = workoutDao.getCompletedSessions()
     val allTemplates: Flow<List<TemplateEntity>> = templateDao.getAllTemplates()
     
+    // User Profile
+    val userProfile: Flow<UserEntity?> = userDao.getUser()
+    suspend fun insertUser(user: UserEntity) = userDao.insertUser(user)
+
     // Training Assets
     val allBars: Flow<List<BarEntity>> = assetDao.getAllBars()
     val allPlates: Flow<List<PlateEntity>> = assetDao.getAllPlates()

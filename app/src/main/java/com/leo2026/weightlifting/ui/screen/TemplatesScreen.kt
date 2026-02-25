@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.leo2026.weightlifting.data.entity.TemplateEntity
 import com.leo2026.weightlifting.ui.viewmodel.WorkoutViewModel
@@ -19,20 +20,27 @@ import com.leo2026.weightlifting.ui.viewmodel.WorkoutViewModel
 @Composable
 fun TemplatesScreen(
     viewModel: WorkoutViewModel,
-    onStartWorkout: () -> Unit
+    onStartWorkout: () -> Unit // Parámetro de navegación corregido
 ) {
     val templates by viewModel.templates.collectAsState()
     var templateToEdit by remember { mutableStateOf<TemplateEntity?>(null) }
     var templateToDelete by remember { mutableStateOf<TemplateEntity?>(null) }
 
     Scaffold(
+        containerColor = Color(0xFF121212),
         topBar = {
-            TopAppBar(title = { Text("Mis Rutinas") })
+            TopAppBar(
+                title = { Text("Mis Rutinas") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E1E1E),
+                    titleContentColor = Color.White
+                )
+            )
         }
     ) { padding ->
         if (templates.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No tienes rutinas guardadas.")
+                Text("No tienes rutinas guardadas.", color = Color.Gray)
             }
         } else {
             LazyColumn(
@@ -58,6 +66,9 @@ fun TemplatesScreen(
         var newName by remember { mutableStateOf(template.name) }
         AlertDialog(
             onDismissRequest = { templateToEdit = null },
+            containerColor = Color(0xFF1E1E1E),
+            titleContentColor = Color(0xFFFF6D00),
+            textContentColor = Color.White,
             title = { Text("Renombrar Rutina") },
             text = {
                 TextField(value = newName, onValueChange = { newName = it }, label = { Text("Nuevo nombre") })
@@ -67,10 +78,10 @@ fun TemplatesScreen(
                     if (viewModel.updateTemplateName(template.id, newName)) {
                         templateToEdit = null
                     }
-                }) { Text("Guardar") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("Guardar") }
             },
             dismissButton = {
-                TextButton(onClick = { templateToEdit = null }) { Text("Cancelar") }
+                TextButton(onClick = { templateToEdit = null }) { Text("Cancelar", color = Color(0xFFFF6D00)) }
             }
         )
     }
@@ -78,19 +89,22 @@ fun TemplatesScreen(
     templateToDelete?.let { template ->
         AlertDialog(
             onDismissRequest = { templateToDelete = null },
+            containerColor = Color(0xFF1E1E1E),
+            titleContentColor = Color(0xFFFF6D00),
+            textContentColor = Color.White,
             title = { Text("Eliminar Rutina") },
-            text = { Text("¿Estás seguro de que quieres eliminar la rutina \"${template.name}\"? Esto no afectará a tu historial pasado.") },
+            text = { Text("¿Estás seguro de que quieres eliminar la rutina \"${template.name}\"?") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteTemplate(template.id)
                         templateToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)
                 ) { Text("Eliminar") }
             },
             dismissButton = {
-                TextButton(onClick = { templateToDelete = null }) { Text("Cancelar") }
+                TextButton(onClick = { templateToDelete = null }) { Text("Cancelar", color = Color(0xFFFF6D00)) }
             }
         )
     }
@@ -103,24 +117,25 @@ fun TemplateItem(
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
-    ElevatedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onClick() }
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = template.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(text = template.name, style = MaterialTheme.typography.titleMedium, color = Color.White)
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFFFF6D00))
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                 }
             }
         }

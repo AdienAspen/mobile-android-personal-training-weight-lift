@@ -5,10 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.os.Build
@@ -54,39 +57,14 @@ fun WorkoutScreen(
     var showTemplatePicker by remember { mutableStateOf(false) }
     
     var calculatorTarget by remember { mutableStateOf<Pair<Double, (Double) -> Unit>?>(null) }
-    var showMenu by remember { mutableStateOf(false) }
-
     var activeExerciseId by remember { mutableStateOf<String?>(null) }
 
     val timerIsRunning by RestTimerService.isRunning.collectAsState()
     val timeLeft by RestTimerService.timeLeft.collectAsState()
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let {
-            scope.launch {
-                val json = viewModel.exportData()
-                context.contentResolver.openOutputStream(it)?.use { stream ->
-                    stream.write(json.toByteArray())
-                }
-                snackbarHostState.showSnackbar("Copia de seguridad exportada")
-            }
-        }
-    }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            context.contentResolver.openInputStream(it)?.use { stream ->
-                val json = stream.bufferedReader().readText()
-                viewModel.importData(json) {
-                    scope.launch { snackbarHostState.showSnackbar("Datos restaurados") }
-                }
-            }
-        }
-    }
+    val OrangePrimary = Color(0xFFFF6D00)
+    val CharcoalBackground = Color(0xFF121212)
+    val DarkGreySurface = Color(0xFF1E1E1E)
 
     LaunchedEffect(prEvent) {
         prEvent?.let { message ->
@@ -111,125 +89,159 @@ fun WorkoutScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            LargeTopAppBar(
-                title = { 
-                    Text(
-                        text = if (sessionId != null) sessionName else "LEO-2026", 
-                        fontWeight = FontWeight.Black
-                    ) 
-                },
-                actions = {
-                    if (sessionId != null) {
-                        IconButton(onClick = { showAddExercise = true }) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                        }
-                        TextButton(onClick = { showSaveTemplate = true }) {
-                            Text("GUARDAR")
-                        }
-                        IconButton(onClick = { viewModel.finishWorkout() }) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.Red)
-                        }
-                    } else {
-                         IconButton(onClick = onNavigateToHistory) {
-                            Icon(Icons.Default.History, contentDescription = null)
-                        }
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = null)
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Exportar Datos") },
-                                onClick = {
-                                    showMenu = false
-                                    exportLauncher.launch("leo_backup_${System.currentTimeMillis()}.json")
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Importar Datos") },
-                                onClick = {
-                                    showMenu = false
-                                    importLauncher.launch(arrayOf("application/json"))
-                                }
-                            )
-                        }
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            if (timerIsRunning) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    tonalElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("DESCANSO ACTIVO", style = MaterialTheme.typography.labelSmall)
-                            Text("${timeLeft}s", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
-                        }
-                        Button(onClick = { context.stopService(Intent(context, RestTimerService::class.java)) }) {
-                            Text("SALTAR")
-                        }
-                    }
-                }
-            }
-        }
+        containerColor = CharcoalBackground
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize().background(CharcoalBackground)) {
             if (sessionId == null) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
+                // --- PANTALLA DE LANZAMIENTO (EL REGRESO) ---
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Button(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        onClick = { viewModel.startWorkout() }
-                    ) {
-                        Text("NUEVO ENTRENAMIENTO")
+                    // 1. Franja Delgada "Rubik"
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Entrenamiento Rubik",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(6.dp).background(OrangePrimary, CircleShape))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "EN VIVO",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = OrangePrimary,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Ayuda",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = OrangePrimary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { /* Ayuda */ }
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        onClick = { viewModel.startFromLastSession() }
-                    ) {
-                        Text("REPETIR ÚLTIMO")
+
+                    // 2. Hero Block: Tarjeta de Plan Activo
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                            colors = CardDefaults.cardColors(containerColor = DarkGreySurface),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = OrangePrimary,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            "PLAN ACTIVO",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Text(
+                                        "S3/8",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = OrangePrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Full Body Pro", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Color.White)
+                                Text("Fuerza e Hipertrofia", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                                    Column {
+                                        Text("PROGRESO GENERAL", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                        Row(verticalAlignment = Alignment.Bottom) {
+                                            Text("35", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Color.White)
+                                            Text("%", style = MaterialTheme.typography.titleMedium, color = Color.Gray, modifier = Modifier.padding(bottom = 4.dp, start = 2.dp))
+                                        }
+                                    }
+                                    Surface(color = Color.White.copy(alpha = 0.05f), shape = RoundedCornerShape(12.dp)) {
+                                        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("SIGUIENTE DÍA 1", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                LinearProgressIndicator(
+                                    progress = 0.35f,
+                                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                                    color = OrangePrimary,
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                                )
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        onClick = { showTemplatePicker = true }
-                    ) {
-                        Text("USAR PLANTILLA")
+
+                    // 3. Botones de Selección Horizontales
+                    item {
+                        Button(
+                            modifier = Modifier.fillMaxWidth().height(64.dp),
+                            onClick = { viewModel.startWorkout() },
+                            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary, contentColor = Color.Black),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("COMENZAR ENTRENO NUEVO", fontWeight = FontWeight.Black)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            onClick = { viewModel.startFromLastSession() },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                        ) {
+                            Text("REPETIR ÚLTIMO", fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            onClick = { showTemplatePicker = true },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                        ) {
+                            Text("USAR PLANTILLA", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             } else {
+                // --- PANTALLA DE TRABAJO ACTIVO (INTOCABLE) ---
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     item {
                         Surface(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                            color = OrangePrimary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Rutina activa: ",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = sessionName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("RUTINA ACTIVA: ", style = MaterialTheme.typography.labelLarge, color = OrangePrimary)
+                                Text(sessionName.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
                     }
@@ -243,13 +255,36 @@ fun WorkoutScreen(
                             isActive = activeExerciseId == exercise.id,
                             onActivate = { activeExerciseId = exercise.id },
                             onDeactivate = { if (activeExerciseId == exercise.id) activeExerciseId = null },
-                            onShowError = { message -> 
-                                scope.launch { snackbarHostState.showSnackbar(message) }
-                            },
-                            onCalculatePlates = { weight, onResult ->
-                                calculatorTarget = weight to onResult 
-                            }
+                            onShowError = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                            onCalculatePlates = { weight, onResult -> calculatorTarget = weight to onResult }
                         )
+                    }
+
+                    // --- BOTÓN FINALIZAR CON DISEÑO "STITCH OFFSET" ---
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)) {
+                            // Viñeta desfasada (Efecto de autor Stitch)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.92f)
+                                    .height(60.dp)
+                                    .offset(x = (-12).dp, y = 6.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.08f))
+                            )
+                            // Botón real
+                            Button(
+                                onClick = { viewModel.finishWorkout() },
+                                modifier = Modifier.fillMaxWidth().height(60.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = DarkGreySurface),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.5f))
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = OrangePrimary)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("FINALIZAR SESIÓN COMPLETA", color = OrangePrimary, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                            }
+                        }
                     }
                     item { Spacer(modifier = Modifier.height(120.dp)) }
                 }
@@ -264,15 +299,6 @@ fun WorkoutScreen(
             onSelect = { template ->
                 viewModel.startWorkout(template.name, template.id)
                 showTemplatePicker = false
-            }
-        )
-    }
-
-    if (showSaveTemplate) {
-        SaveTemplateDialog(
-            onDismiss = { showSaveTemplate = false },
-            onConfirm = { name ->
-                if (viewModel.saveCurrentAsTemplate(name)) showSaveTemplate = false
             }
         )
     }
@@ -298,6 +324,212 @@ fun WorkoutScreen(
             onDismiss = { calculatorTarget = null }
         )
     }
+}
+
+@Composable
+fun ExerciseCard(
+    exercise: ExerciseEntity,
+    viewModel: WorkoutViewModel,
+    exerciseSets: List<com.leo2026.weightlifting.data.entity.SetEntryEntity>,
+    isResting: Boolean,
+    isActive: Boolean,
+    onActivate: () -> Unit,
+    onDeactivate: () -> Unit,
+    onShowError: (String) -> Unit,
+    onCalculatePlates: (Double, (Double) -> Unit) -> Unit
+) {
+    var weight by remember { mutableStateOf("") }
+    var reps by remember { mutableStateOf("") }
+    var rest by remember { mutableStateOf(exercise.defaultRestSeconds.toString()) }
+
+    var isRunningSet by remember { mutableStateOf(false) }
+    var startTime by remember { mutableLongStateOf(0L) }
+    var elapsedTime by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(isRunningSet) {
+        if (isRunningSet) {
+            startTime = System.currentTimeMillis()
+            while (isRunningSet) {
+                elapsedTime = System.currentTimeMillis() - startTime
+                delay(100)
+            }
+        } else {
+            elapsedTime = 0L
+        }
+    }
+
+    LaunchedEffect(isResting) {
+        if (!isResting && !isRunningSet && isActive && exerciseSets.isNotEmpty()) {
+            isRunningSet = true
+        }
+    }
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (isRunningSet) Color(0xFF1E1E1E) else Color.White
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = exercise.name.uppercase(), 
+                style = MaterialTheme.typography.titleLarge, 
+                fontWeight = FontWeight.Black,
+                color = if (isRunningSet) Color(0xFFFF6D00) else Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            if (isRunningSet) {
+                val mins = (elapsedTime / 1000) / 60
+                val secs = (elapsedTime / 1000) % 60
+                val decs = (elapsedTime % 1000) / 100
+                Text(
+                    text = String.format("%02d:%02d:%d", mins, secs, decs),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFFFF6D00)
+                )
+            }
+
+            if (!isRunningSet) {
+                Button(
+                    onClick = {
+                        val w = weight.toDoubleOrNull() ?: 0.0
+                        val r = reps.toIntOrNull() ?: 0
+                        val rSec = rest.toIntOrNull() ?: 0
+                        if (w <= 0 || r <= 0 || rSec <= 0) {
+                            onShowError("⚠️ Completa: Peso, Reps y Descanso para iniciar.")
+                        } else {
+                            onActivate()
+                            isRunningSet = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFFFF6D00))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("INICIAR SERIE", color = Color(0xFFFF6D00), fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Button(
+                        onClick = {
+                            val w = weight.toDoubleOrNull() ?: 0.0
+                            val r = reps.toIntOrNull() ?: 0
+                            val rSec = rest.toIntOrNull() ?: 90
+                            if (w > 0 && r > 0) {
+                                viewModel.addSet(exercise.id, w, r, rSec, elapsedTime)
+                                isRunningSet = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("FINALIZAR", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            isRunningSet = false
+                            onDeactivate()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.Gray)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("FINALIZAR EJERCICIO", color = Color.Gray)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    label = { Text("Peso", fontSize = 10.sp) },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
+                IconButton(onClick = { 
+                    val w = weight.toDoubleOrNull() ?: 0.0
+                    if (w > 0) onCalculatePlates(w) { weight = it.toString() }
+                }) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, tint = Color.Black)
+                }
+                OutlinedTextField(
+                    value = reps,
+                    onValueChange = { reps = it },
+                    label = { Text("Reps", fontSize = 10.sp) },
+                    modifier = Modifier.weight(0.8f),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                OutlinedTextField(
+                    value = rest,
+                    onValueChange = { rest = it },
+                    label = { Text("Rest", fontSize = 10.sp) },
+                    modifier = Modifier.weight(0.8f),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
+            }
+
+            Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+            Column {
+                exerciseSets.forEachIndexed { index, set ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                        Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall, color = if (isRunningSet) Color(0xFFFF6D00) else Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddExerciseDialog(onDismiss: () -> Unit, onConfirm: (String, String, Int) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var rest by remember { mutableStateOf("90") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        titleContentColor = Color(0xFFFF6D00),
+        title = { Text("NUEVO EJERCICIO") },
+        text = {
+            Column {
+                TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") })
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") })
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") })
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("AÑADIR") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -350,21 +582,25 @@ fun PlateCalculatorDialog(
                 }
             }
         }
-        result
+        return@remember result
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Calculadora Inteligente") },
+        containerColor = Color(0xFF1E1E1E),
+        titleContentColor = Color(0xFFFF6D00),
+        textContentColor = Color.White,
+        title = { Text("CALCULADORA INTELIGENTE") },
         text = {
             Column {
                 if (availableBars.isEmpty()) {
                     Text("⚠️ Registra tu equipo", color = Color.Red)
                 } else {
-                    Text("SOPORTE:", style = MaterialTheme.typography.labelSmall)
+                    Text("SOPORTE:", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00))
                     OutlinedCard(
                         onClick = { expandedBarMenu = true },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFF121212), contentColor = Color.White)
                     ) {
                         Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(text = selectedBar?.let { "${it.name} (${it.weight}kg)" } ?: "Seleccionar...")
@@ -385,8 +621,8 @@ fun PlateCalculatorDialog(
                         }
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 12.dp))
-                    Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold)
+                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.3f))
+                    Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00))
                     if (platesNeeded.isEmpty()) {
                         Text("SOLO EL SOPORTE", fontWeight = FontWeight.Black)
                     } else {
@@ -398,209 +634,33 @@ fun PlateCalculatorDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(currentTarget) }) { Text("OK") }
+            Button(onClick = { onConfirm(currentTarget) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("OK") }
         }
     )
 }
 
 @Composable
-fun ExerciseCard(
-    exercise: ExerciseEntity,
-    viewModel: WorkoutViewModel,
-    exerciseSets: List<com.leo2026.weightlifting.data.entity.SetEntryEntity>,
-    isResting: Boolean,
-    isActive: Boolean,
-    onActivate: () -> Unit,
-    onDeactivate: () -> Unit,
-    onShowError: (String) -> Unit, // Nueva función para avisar errores
-    onCalculatePlates: (Double, (Double) -> Unit) -> Unit
-) {
-    var weight by remember { mutableStateOf("") }
-    var reps by remember { mutableStateOf("") }
-    var rest by remember { mutableStateOf(exercise.defaultRestSeconds.toString()) }
-
-    var isRunningSet by remember { mutableStateOf(false) }
-    var startTime by remember { mutableLongStateOf(0L) }
-    var elapsedTime by remember { mutableLongStateOf(0L) }
-
-    LaunchedEffect(isRunningSet) {
-        if (isRunningSet) {
-            startTime = System.currentTimeMillis()
-            while (isRunningSet) {
-                elapsedTime = System.currentTimeMillis() - startTime
-                delay(100)
-            }
-        } else {
-            elapsedTime = 0L
-        }
-    }
-
-    LaunchedEffect(isResting) {
-        if (!isResting && !isRunningSet && isActive && exerciseSets.isNotEmpty()) {
-            isRunningSet = true
-        }
-    }
-
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = exercise.name.uppercase(), 
-                style = MaterialTheme.typography.titleLarge, 
-                fontWeight = FontWeight.Black,
-                color = if (isActive) MaterialTheme.colorScheme.primary else Color.Unspecified
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            if (isRunningSet) {
-                val mins = (elapsedTime / 1000) / 60
-                val secs = (elapsedTime / 1000) % 60
-                val decs = (elapsedTime % 1000) / 100
-                Text(
-                    text = String.format("%02d:%02d:%d", mins, secs, decs),
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            if (!isRunningSet) {
-                Button(
-                    onClick = {
-                        // --- BLINDAJE: Validación de campos antes de START ---
-                        val w = weight.toDoubleOrNull() ?: 0.0
-                        val r = reps.toIntOrNull() ?: 0
-                        val rSec = rest.toIntOrNull() ?: 0
-                        
-                        if (w <= 0 || r <= 0 || rSec <= 0) {
-                            onShowError("⚠️ Completa: Peso, Reps y Descanso para iniciar.")
-                        } else {
-                            onActivate()
-                            isRunningSet = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(60.dp)
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("START SERIE", fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Button(
-                        onClick = {
-                            val w = weight.toDoubleOrNull() ?: 0.0
-                            val r = reps.toIntOrNull() ?: 0
-                            val rSec = rest.toIntOrNull() ?: 90
-                            if (w > 0 && r > 0) {
-                                viewModel.addSet(exercise.id, w, r, rSec, elapsedTime)
-                                isRunningSet = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
-                        Icon(Icons.Default.Stop, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("FINISHED", fontWeight = FontWeight.Bold)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            isRunningSet = false
-                            onDeactivate()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
-                    ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.Gray)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("FINALIZAR EJERCICIO", color = Color.Gray)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text("Peso", fontSize = 10.sp) },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                )
-                IconButton(onClick = { 
-                    val w = weight.toDoubleOrNull() ?: 0.0
-                    if (w > 0) onCalculatePlates(w) { weight = it.toString() }
-                }) {
-                    Icon(Icons.Default.Calculate, contentDescription = null)
-                }
-                OutlinedTextField(
-                    value = reps,
-                    onValueChange = { reps = it },
-                    label = { Text("Reps", fontSize = 10.sp) },
-                    modifier = Modifier.weight(0.8f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                OutlinedTextField(
-                    value = rest,
-                    onValueChange = { rest = it },
-                    label = { Text("Rest", fontSize = 10.sp) },
-                    modifier = Modifier.weight(0.8f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                )
-            }
-
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
-
-            Column {
-                exerciseSets.forEachIndexed { index, set ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                        Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AddExerciseDialog(onDismiss: () -> Unit, onConfirm: (String, String, Int) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var rest by remember { mutableStateOf("90") }
-
+fun TemplatePicker(templates: List<com.leo2026.weightlifting.data.entity.TemplateEntity>, onDismiss: () -> Unit, onSelect: (com.leo2026.weightlifting.data.entity.TemplateEntity) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("NUEVO EJERCICIO") },
+        containerColor = Color(0xFF1E1E1E),
+        titleContentColor = Color(0xFFFF6D00),
+        title = { Text("SELECCIONAR PLANTILLA") },
         text = {
-            Column {
-                TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") })
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") })
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") })
+            LazyColumn {
+                items(templates) { template ->
+                    TextButton(
+                        onClick = { onSelect(template) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(template.name, color = Color.White)
+                    }
+                }
             }
         },
-        confirmButton = {
-            Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }) { Text("AÑADIR") }
-        },
+        confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR") }
+            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
         }
     )
 }
@@ -610,39 +670,17 @@ fun SaveTemplateDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        titleContentColor = Color(0xFFFF6D00),
         title = { Text("GUARDAR PLANTILLA") },
         text = {
             TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre de la rutina") })
         },
         confirmButton = {
-            Button(onClick = { onConfirm(name) }) { Text("GUARDAR") }
+            Button(onClick = { onConfirm(name) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("GUARDAR") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR") }
-        }
-    )
-}
-
-@Composable
-fun TemplatePicker(templates: List<com.leo2026.weightlifting.data.entity.TemplateEntity>, onDismiss: () -> Unit, onSelect: (com.leo2026.weightlifting.data.entity.TemplateEntity) -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("SELECCIONAR PLANTILLA") },
-        text = {
-            LazyColumn {
-                items(templates) { template ->
-                    TextButton(
-                        onClick = { onSelect(template) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(template.name)
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR") }
+            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
         }
     )
 }

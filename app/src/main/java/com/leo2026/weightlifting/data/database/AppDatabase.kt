@@ -15,9 +15,10 @@ import com.leo2026.weightlifting.data.entity.*
         TemplateEntity::class,
         TemplateExerciseEntity::class,
         BarEntity::class,
-        PlateEntity::class
+        PlateEntity::class,
+        UserEntity::class
     ],
-    version = 5, // Subimos a versión 5 para incluir durationMillis en SetEntryEntity
+    version = 6, // Increment version for UserEntity
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -25,6 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
     abstract fun templateDao(): TemplateDao
     abstract fun assetDao(): AssetDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

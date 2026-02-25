@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "stitch-local": {
+      "url": "http://localhost:3001/sse",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer AQ.Ab8RN6KFhwP8Gc9cHsnWzRNn6VBd6waWa9UetDudH2kAKX9zuQ",
+        "X-Stitch-Project-Id": "10243739691007292124"
+      }
+    }
+  }
+}

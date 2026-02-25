@@ -19,6 +19,9 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
     
     private val _manualSessionExerciseIds = MutableStateFlow<List<String>>(emptyList())
 
+    val userProfile: StateFlow<UserEntity?> = repository.userProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     val exercises: StateFlow<List<ExerciseEntity>> = combine(
         _selectedTemplateId,
         _manualSessionExerciseIds,
@@ -60,6 +63,12 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
             else flowOf(emptyList())
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun updateProfile(firstName: String, lastName: String) {
+        viewModelScope.launch {
+            repository.insertUser(UserEntity(firstName = firstName, lastName = lastName))
+        }
+    }
 
     fun getSetsForSession(sessionId: String): Flow<List<SetEntryEntity>> {
         return repository.getSetsForSession(sessionId)
@@ -184,11 +193,10 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
-    // --- MEJORADO: Búsqueda segura del ejercicio para el Snapshot ---
+    // --- MEJORADO: Función para guardar con duración ---
     fun addSet(exerciseId: String, weight: Double, reps: Int, restSeconds: Int, durationMillis: Long) {
         val sessionId = _currentSessionId.value ?: return
         viewModelScope.launch {
-            // Buscamos el ejercicio directamente en la DB para asegurar que tenemos sus datos
             val exercise = repository.getExerciseById(exerciseId)
             val currentPR = repository.getPersonalRecord(exerciseId)
             

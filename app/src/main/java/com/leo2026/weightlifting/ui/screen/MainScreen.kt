@@ -1,15 +1,15 @@
 package com.leo2026.weightlifting.ui.screen
 
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.LibraryBooks
-import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,113 +18,139 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.leo2026.weightlifting.ui.viewmodel.WorkoutViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: WorkoutViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
+    val OrangePrimary = Color(0xFFFF6D00)
+    val CharcoalBackground = Color(0xFF121212)
+    val DarkGreySurface = Color(0xFF1E1E1E)
+
     Scaffold(
+        containerColor = CharcoalBackground,
+        topBar = {
+            // MENÚ GLOBAL SUPER-TOP (Analítica, Home, Ajustes)
+            if (currentDestination != null && !currentDestination.startsWith("details")) {
+                TopAppBar(
+                    title = { },
+                    actions = {
+                        IconButton(onClick = { navController.navigate("analytics") }) {
+                            Icon(Icons.Default.BarChart, contentDescription = "Analítica", tint = Color.White.copy(alpha = 0.6f))
+                        }
+                        IconButton(onClick = {
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }) {
+                            Icon(Icons.Default.Home, contentDescription = "Home", tint = OrangePrimary)
+                        }
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = Color.White.copy(alpha = 0.6f))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            }
+        },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.FitnessCenter, contentDescription = "Entrenar") },
-                    label = { Text("Entrenar") },
-                    selected = currentDestination == "workout", 
-                    onClick = { 
-                        navController.navigate("workout") { 
-                            popUpTo("workout") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        } 
-                    }
+            NavigationBar(
+                containerColor = DarkGreySurface,
+                tonalElevation = 0.dp
+            ) {
+                val items = listOf(
+                    Triple("workout", "Entrenar", Icons.Default.FitnessCenter),
+                    Triple("templates", "Rutinas", Icons.Default.ListAlt),
+                    Triple("exercises", "Ejercicios", Icons.Default.LibraryBooks),
+                    Triple("assets", "Equipo", Icons.Default.Inventory),
+                    Triple("history", "Historial", Icons.Default.History)
                 )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.ListAlt, contentDescription = "Rutinas") },
-                    label = { Text("Rutinas") },
-                    selected = currentDestination == "templates",
-                    onClick = { 
-                        navController.navigate("templates") {
-                            popUpTo("workout") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.LibraryBooks, contentDescription = "Ejercicios") },
-                    label = { Text("Ejercicios") },
-                    selected = currentDestination == "exercises",
-                    onClick = { 
-                        navController.navigate("exercises") {
-                            popUpTo("workout") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Inventory, contentDescription = "Equipo") },
-                    label = { Text("Equipo") },
-                    selected = currentDestination == "assets",
-                    onClick = {
-                        navController.navigate("assets") {
-                            popUpTo("workout") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.History, contentDescription = "Historial") },
-                    label = { Text("Historial") },
-                    selected = currentDestination == "history",
-                    onClick = { 
-                        navController.navigate("history") {
-                            popUpTo("workout") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
+
+                items.forEach { (route, label, icon) ->
+                    val isSelected = currentDestination == route
+                    NavigationBarItem(
+                        icon = { Icon(icon, contentDescription = label) },
+                        label = { Text(label) },
+                        selected = isSelected,
+                        onClick = {
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = OrangePrimary,
+                            selectedTextColor = OrangePrimary,
+                            unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                            unselectedTextColor = Color.White.copy(alpha = 0.6f),
+                            indicatorColor = Color.Transparent
+                        )
+                    )
+                }
             }
         }
     ) { padding ->
-        NavHost(navController = navController, startDestination = "workout", modifier = Modifier.padding(padding)) {
-            composable("workout") {
-                WorkoutScreen(viewModel) { navController.navigate("history") }
-            }
-            composable("templates") {
-                TemplatesScreen(viewModel) {
-                    navController.navigate("workout") {
-                        popUpTo("workout") { inclusive = true }
+        Surface(
+            modifier = Modifier.padding(padding),
+            color = CharcoalBackground
+        ) {
+            NavHost(navController = navController, startDestination = "home") {
+                composable("home") {
+                    HomeScreen(
+                        viewModel = viewModel,
+                        onStartWorkout = { navController.navigate("workout") },
+                        onNavigateToHistory = { navController.navigate("history") }
+                    )
+                }
+                composable("workout") {
+                    WorkoutScreen(viewModel) { navController.navigate("history") }
+                }
+                composable("templates") {
+                    TemplatesScreen(viewModel) {
+                        navController.navigate("workout")
                     }
                 }
-            }
-            composable("exercises") {
-                ExercisesScreen(viewModel) {
-                    navController.navigate("workout") {
-                        popUpTo("workout") { inclusive = true }
+                composable("exercises") {
+                    ExercisesScreen(viewModel) {
+                        navController.navigate("workout")
                     }
                 }
-            }
-            composable("assets") {
-                AssetsScreen(viewModel)
-            }
-            composable("history") {
-                HistoryScreen(
-                    viewModel = viewModel,
-                    onNavigateToDetails = { sessionId -> navController.navigate("details/$sessionId") },
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            composable(
-                route = "details/{sessionId}",
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
-                SessionDetailsScreen(sessionId, viewModel) { navController.popBackStack() }
+                composable("assets") {
+                    AssetsScreen(viewModel)
+                }
+                composable("history") {
+                    HistoryScreen(
+                        viewModel = viewModel,
+                        onNavigateToDetails = { sessionId -> navController.navigate("details/$sessionId") },
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+                composable("analytics") { PlaceholderScreen("Analítica", OrangePrimary) }
+                composable("settings") { PlaceholderScreen("Ajustes", OrangePrimary) }
+                
+                composable(
+                    route = "details/{sessionId}",
+                    arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+                    SessionDetailsScreen(sessionId, viewModel) { navController.popBackStack() }
+                }
             }
         }
+    }
+}
+
+@Composable
+fun PlaceholderScreen(title: String, color: Color) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(title, style = MaterialTheme.typography.headlineLarge, color = color, fontWeight = FontWeight.Black)
     }
 }
