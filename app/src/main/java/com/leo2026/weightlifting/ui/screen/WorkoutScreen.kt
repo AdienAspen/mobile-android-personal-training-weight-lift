@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.leo2026.weightlifting.service.RestTimerService
@@ -93,49 +95,29 @@ fun WorkoutScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(CharcoalBackground)) {
             if (sessionId == null) {
-                // --- PANTALLA DE LANZAMIENTO (EL REGRESO) ---
+                // --- PANTALLA DE LANZAMIENTO ---
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 1. Franja Delgada "Rubik"
                     item {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(
-                                    text = "Entrenamiento Rubik",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                Text(text = "Entrenamiento Rubik", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(6.dp).background(OrangePrimary, CircleShape))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "EN VIVO",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = OrangePrimary,
-                                        fontWeight = FontWeight.Black
-                                    )
+                                    Text(text = "EN VIVO", style = MaterialTheme.typography.labelSmall, color = OrangePrimary, fontWeight = FontWeight.Black)
                                 }
                             }
-                            Text(
-                                text = "Ayuda",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = OrangePrimary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { /* Ayuda */ }
-                            )
+                            Text(text = "Ayuda", style = MaterialTheme.typography.labelLarge, color = OrangePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { /* Ayuda */ })
                         }
                     }
 
-                    // 2. Hero Block: Tarjeta de Plan Activo
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
@@ -143,30 +125,11 @@ fun WorkoutScreen(
                             shape = RoundedCornerShape(24.dp)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        color = OrangePrimary,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            "PLAN ACTIVO",
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color.Black,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(color = OrangePrimary, shape = RoundedCornerShape(8.dp)) {
+                                        Text("PLAN ACTIVO", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = Color.Black, fontWeight = FontWeight.Bold)
                                     }
-                                    Text(
-                                        "S3/8",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = OrangePrimary,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
+                                    Text("S3/8", style = MaterialTheme.typography.labelMedium, color = OrangePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp))
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text("Full Body Pro", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Color.White)
@@ -189,59 +152,38 @@ fun WorkoutScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
-                                LinearProgressIndicator(
-                                    progress = 0.35f,
-                                    modifier = Modifier.fillMaxWidth().height(8.dp),
-                                    color = OrangePrimary,
-                                    trackColor = Color.White.copy(alpha = 0.1f),
-                                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                                )
+                                LinearProgressIndicator(progress = 0.35f, modifier = Modifier.fillMaxWidth().height(8.dp), color = OrangePrimary, trackColor = Color.White.copy(alpha = 0.1f), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                             }
                         }
                     }
 
-                    // 3. Botones de Selección Horizontales
                     item {
-                        Button(
-                            modifier = Modifier.fillMaxWidth().height(64.dp),
-                            onClick = { viewModel.startWorkout() },
-                            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary, contentColor = Color.Black),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
+                        Button(modifier = Modifier.fillMaxWidth().height(64.dp), onClick = { viewModel.startWorkout() }, colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary, contentColor = Color.Black), shape = RoundedCornerShape(12.dp)) {
                             Text("COMENZAR ENTRENO NUEVO", fontWeight = FontWeight.Black)
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            onClick = { viewModel.startFromLastSession() },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
-                        ) {
+                        OutlinedButton(modifier = Modifier.fillMaxWidth().height(56.dp), onClick = { viewModel.startFromLastSession() }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)) {
                             Text("REPETIR ÚLTIMO", fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            onClick = { showTemplatePicker = true },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
-                        ) {
+                        OutlinedButton(modifier = Modifier.fillMaxWidth().height(56.dp), onClick = { showTemplatePicker = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)) {
                             Text("USAR PLANTILLA", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             } else {
-                // --- PANTALLA DE TRABAJO ACTIVO (INTOCABLE) ---
+                // --- PANTALLA DE TRABAJO ACTIVO ---
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     item {
-                        Surface(
-                            color = OrangePrimary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            colors = CardDefaults.cardColors(containerColor = DarkGreySurface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.2f)),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("RUTINA ACTIVA: ", style = MaterialTheme.typography.labelLarge, color = OrangePrimary)
-                                Text(sessionName.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("RUTINA ACTIVA: ", style = MaterialTheme.typography.labelLarge, color = OrangePrimary, fontWeight = FontWeight.Bold)
+                                Text(sessionName.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Black, color = Color.White)
                             }
                         }
                     }
@@ -260,26 +202,10 @@ fun WorkoutScreen(
                         )
                     }
 
-                    // --- BOTÓN FINALIZAR CON DISEÑO "STITCH OFFSET" ---
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)) {
-                            // Viñeta desfasada (Efecto de autor Stitch)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.92f)
-                                    .height(60.dp)
-                                    .offset(x = (-12).dp, y = 6.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
-                            )
-                            // Botón real
-                            Button(
-                                onClick = { viewModel.finishWorkout() },
-                                modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = DarkGreySurface),
-                                shape = RoundedCornerShape(12.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.5f))
-                            ) {
+                            Box(modifier = Modifier.fillMaxWidth(0.92f).height(60.dp).offset(x = (-12).dp, y = 6.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.08f)))
+                            Button(onClick = { viewModel.finishWorkout() }, modifier = Modifier.fillMaxWidth().height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = DarkGreySurface), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, OrangePrimary.copy(alpha = 0.5f))) {
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = OrangePrimary)
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text("FINALIZAR SESIÓN COMPLETA", color = OrangePrimary, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
@@ -293,36 +219,15 @@ fun WorkoutScreen(
     }
 
     if (showTemplatePicker) {
-        TemplatePicker(
-            templates = templates,
-            onDismiss = { showTemplatePicker = false },
-            onSelect = { template ->
-                viewModel.startWorkout(template.name, template.id)
-                showTemplatePicker = false
-            }
-        )
+        TemplatePicker(templates = templates, onDismiss = { showTemplatePicker = false }, onSelect = { template -> viewModel.startWorkout(template.name, template.id); showTemplatePicker = false })
     }
 
     if (showAddExercise) {
-        AddExerciseDialog(
-            onDismiss = { showAddExercise = false },
-            onConfirm = { name, category, rest ->
-                if (viewModel.addExercise(name, category, rest)) showAddExercise = false
-            }
-        )
+        AddExerciseDialog(onDismiss = { showAddExercise = false }, onConfirm = { name, category, rest -> if (viewModel.addExercise(name, category, rest)) showAddExercise = false })
     }
 
     calculatorTarget?.let { (targetWeight, onWeightSelected) ->
-        PlateCalculatorDialog(
-            targetWeight = targetWeight,
-            availableBars = bars,
-            availablePlates = plates,
-            onConfirm = { finalWeight ->
-                onWeightSelected(finalWeight)
-                calculatorTarget = null
-            },
-            onDismiss = { calculatorTarget = null }
-        )
+        PlateCalculatorDialog(targetWeight = targetWeight, availableBars = bars, availablePlates = plates, onConfirm = { finalWeight -> onWeightSelected(finalWeight); calculatorTarget = null }, onDismiss = { calculatorTarget = null })
     }
 }
 
@@ -353,149 +258,126 @@ fun ExerciseCard(
                 elapsedTime = System.currentTimeMillis() - startTime
                 delay(100)
             }
-        } else {
-            elapsedTime = 0L
-        }
+        } else { elapsedTime = 0L }
     }
 
     LaunchedEffect(isResting) {
-        if (!isResting && !isRunningSet && isActive && exerciseSets.isNotEmpty()) {
-            isRunningSet = true
-        }
+        if (!isResting && !isRunningSet && isActive && exerciseSets.isNotEmpty()) { isRunningSet = true }
     }
 
-    ElevatedCard(
+    Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isRunningSet) Color(0xFF1E1E1E) else Color.White
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1E1E),
+            contentColor = Color.White
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = exercise.name.uppercase(), 
-                style = MaterialTheme.typography.titleLarge, 
-                fontWeight = FontWeight.Black,
-                color = if (isRunningSet) Color(0xFFFF6D00) else Color.Black
-            )
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(text = exercise.name.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (isRunningSet) Color(0xFFFF6D00) else Color.White)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             if (isRunningSet) {
                 val mins = (elapsedTime / 1000) / 60
                 val secs = (elapsedTime / 1000) % 60
                 val decs = (elapsedTime % 1000) / 100
-                Text(
-                    text = String.format("%02d:%02d:%d", mins, secs, decs),
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = Color(0xFFFF6D00)
-                )
+                Text(text = String.format("%02d:%02d:%d", mins, secs, decs), style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color(0xFFFF6D00))
             }
 
             if (!isRunningSet) {
-                Button(
-                    onClick = {
-                        val w = weight.toDoubleOrNull() ?: 0.0
-                        val r = reps.toIntOrNull() ?: 0
-                        val rSec = rest.toIntOrNull() ?: 0
-                        if (w <= 0 || r <= 0 || rSec <= 0) {
-                            onShowError("⚠️ Completa: Peso, Reps y Descanso para iniciar.")
-                        } else {
-                            onActivate()
-                            isRunningSet = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                ) {
+                Button(onClick = {
+                    val w = weight.toDoubleOrNull() ?: 0.0
+                    val r = reps.toIntOrNull() ?: 0
+                    val rSec = rest.toIntOrNull() ?: 0
+                    if (w <= 0 || r <= 0 || rSec <= 0) { onShowError("⚠️ Completa: Peso, Reps y Descanso") } else { onActivate(); isRunningSet = true }
+                }, modifier = Modifier.fillMaxWidth().height(64.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.Black), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00))) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFFFF6D00))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("INICIAR SERIE", color = Color(0xFFFF6D00), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("INICIAR SERIE", color = Color(0xFFFF6D00), fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Button(
-                        onClick = {
-                            val w = weight.toDoubleOrNull() ?: 0.0
-                            val r = reps.toIntOrNull() ?: 0
-                            val rSec = rest.toIntOrNull() ?: 90
-                            if (w > 0 && r > 0) {
-                                viewModel.addSet(exercise.id, w, r, rSec, elapsedTime)
-                                isRunningSet = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                    ) {
+                    Button(onClick = {
+                        val w = weight.toDoubleOrNull() ?: 0.0
+                        val r = reps.toIntOrNull() ?: 0
+                        val rSec = rest.toIntOrNull() ?: 90
+                        if (w > 0 && r > 0) { viewModel.addSet(exercise.id, w, r, rSec, elapsedTime); isRunningSet = false }
+                    }, modifier = Modifier.fillMaxWidth().height(64.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)), shape = RoundedCornerShape(12.dp)) {
                         Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("FINALIZAR", color = Color.White, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("FINALIZAR", color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            isRunningSet = false
-                            onDeactivate()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
-                    ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.Gray)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("FINALIZAR EJERCICIO", color = Color.Gray)
+                    TextButton(onClick = { isRunningSet = false; onDeactivate() }) {
+                        Text("CANCELAR ESTA SERIE", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = weight,
                     onValueChange = { weight = it },
-                    label = { Text("Peso", fontSize = 10.sp) },
+                    label = { Text("PESO (KG)", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFF6D00), fontWeight = FontWeight.Black, fontSize = 18.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF6D00),
+                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                        focusedContainerColor = Color(0xFF121212),
+                        unfocusedContainerColor = Color(0xFF121212),
+                        focusedLabelColor = Color(0xFFFF6D00)
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                IconButton(onClick = { 
-                    val w = weight.toDoubleOrNull() ?: 0.0
-                    if (w > 0) onCalculatePlates(w) { weight = it.toString() }
-                }) {
-                    Icon(Icons.Default.Calculate, contentDescription = null, tint = Color.Black)
+                
+                IconButton(onClick = { val w = weight.toDoubleOrNull() ?: 0.0; if (w > 0) onCalculatePlates(w) { weight = it.toString() } }, modifier = Modifier.size(48.dp).background(Color.Black, RoundedCornerShape(12.dp))) {
+                    Icon(Icons.Default.Calculate, contentDescription = null, tint = Color(0xFFFF6D00))
                 }
+
                 OutlinedTextField(
                     value = reps,
                     onValueChange = { reps = it },
-                    label = { Text("Reps", fontSize = 10.sp) },
+                    label = { Text("REPS", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
                     modifier = Modifier.weight(0.8f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF6D00),
+                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                        focusedContainerColor = Color(0xFF121212),
+                        unfocusedContainerColor = Color(0xFF121212)
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                
                 OutlinedTextField(
                     value = rest,
                     onValueChange = { rest = it },
-                    label = { Text("Rest", fontSize = 10.sp) },
+                    label = { Text("REST (S)", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
                     modifier = Modifier.weight(0.8f),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF6D00),
+                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                        focusedContainerColor = Color(0xFF121212),
+                        unfocusedContainerColor = Color(0xFF121212)
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
+            Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color.Gray.copy(alpha = 0.2f))
 
             Column {
                 exerciseSets.forEachIndexed { index, set ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                        Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall, color = if (isRunningSet) Color(0xFFFF6D00) else Color.Black)
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00))
                     }
                 }
             }
@@ -508,179 +390,30 @@ fun AddExerciseDialog(onDismiss: () -> Unit, onConfirm: (String, String, Int) ->
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var rest by remember { mutableStateOf("90") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        titleContentColor = Color(0xFFFF6D00),
-        title = { Text("NUEVO EJERCICIO") },
-        text = {
-            Column {
-                TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") })
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") })
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") })
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("AÑADIR") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
-        }
-    )
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("NUEVO EJERCICIO") }, text = { Column { TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)) } }, confirmButton = { Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("AÑADIR") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlateCalculatorDialog(
-    targetWeight: Double,
-    availableBars: List<BarEntity>,
-    availablePlates: List<PlateEntity>,
-    onConfirm: (Double) -> Unit,
-    onDismiss: () -> Unit
-) {
+fun PlateCalculatorDialog(targetWeight: Double, availableBars: List<BarEntity>, availablePlates: List<PlateEntity>, onConfirm: (Double) -> Unit, onDismiss: () -> Unit) {
     var selectedBar by remember { mutableStateOf(availableBars.firstOrNull()) }
     var currentTarget by remember(targetWeight) { mutableStateOf(targetWeight) }
     var expandedBarMenu by remember { mutableStateOf(false) }
-    
-    val reachableWeights = remember(selectedBar, availablePlates) {
-        val barWeight = selectedBar?.weight ?: 0.0
-        var possiblePerSide = setOf(0.0)
-        for (plate in availablePlates) {
-            val nextPossible = mutableSetOf<Double>()
-            val maxPairs = plate.quantity / 2
-            for (p in possiblePerSide) {
-                for (i in 0..maxPairs) {
-                    nextPossible.add(p + (i * plate.weight))
-                }
-            }
-            possiblePerSide = nextPossible
-        }
-        possiblePerSide.map { barWeight + (it * 2) }.sorted()
-    }
-
+    val reachableWeights = remember(selectedBar, availablePlates) { val barWeight = selectedBar?.weight ?: 0.0; var possiblePerSide = setOf(0.0); for (plate in availablePlates) { val nextPossible = mutableSetOf<Double>(); val maxPairs = plate.quantity / 2; for (p in possiblePerSide) { for (i in 0..maxPairs) { nextPossible.add(p + (i * plate.weight)) } }; possiblePerSide = nextPossible }; possiblePerSide.map { barWeight + (it * 2) }.sorted() }
     val isExactPossible = reachableWeights.any { Math.abs(it - currentTarget) < 0.01 }
     val lowerSuggestion = reachableWeights.filter { it < currentTarget }.lastOrNull()
     val upperSuggestion = reachableWeights.filter { it > currentTarget }.firstOrNull()
-
-    val platesNeeded = remember(selectedBar, availablePlates, currentTarget) {
-        val barWeight = selectedBar?.weight ?: 0.0
-        val remainingPerSide = (currentTarget - barWeight) / 2.0
-        val result = mutableListOf<Double>()
-        if (remainingPerSide > 0) {
-            var currentRemaining = remainingPerSide
-            val sortedPlates = availablePlates.sortedByDescending { it.weight }
-            for (plate in sortedPlates) {
-                val maxPairs = plate.quantity / 2
-                var pairsUsed = 0
-                while (currentRemaining >= plate.weight - 0.001 && pairsUsed < maxPairs) {
-                    result.add(plate.weight)
-                    currentRemaining -= plate.weight
-                    pairsUsed++
-                }
-            }
-        }
-        return@remember result
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        titleContentColor = Color(0xFFFF6D00),
-        textContentColor = Color.White,
-        title = { Text("CALCULADORA INTELIGENTE") },
-        text = {
-            Column {
-                if (availableBars.isEmpty()) {
-                    Text("⚠️ Registra tu equipo", color = Color.Red)
-                } else {
-                    Text("SOPORTE:", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00))
-                    OutlinedCard(
-                        onClick = { expandedBarMenu = true },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFF121212), contentColor = Color.White)
-                    ) {
-                        Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = selectedBar?.let { "${it.name} (${it.weight}kg)" } ?: "Seleccionar...")
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
-                    }
-                    DropdownMenu(expanded = expandedBarMenu, onDismissRequest = { expandedBarMenu = false }) {
-                        availableBars.forEach { bar ->
-                            DropdownMenuItem(text = { Text("${bar.name} (${bar.weight}kg)") }, onClick = { selectedBar = bar; expandedBarMenu = false })
-                        }
-                    }
-
-                    if (!isExactPossible) {
-                        Text("No es posible armar ${targetWeight}kg.", color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            lowerSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) }
-                            upperSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) }
-                        }
-                    }
-
-                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.3f))
-                    Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00))
-                    if (platesNeeded.isEmpty()) {
-                        Text("SOLO EL SOPORTE", fontWeight = FontWeight.Black)
-                    } else {
-                        platesNeeded.groupBy { it }.forEach { (weight, list) ->
-                            Text("${list.size} x ${weight}kg", fontWeight = FontWeight.Black, fontSize = 18.sp)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(currentTarget) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("OK") }
-        }
-    )
+    val platesNeeded = remember(selectedBar, availablePlates, currentTarget) { val barWeight = selectedBar?.weight ?: 0.0; val remainingPerSide = (currentTarget - barWeight) / 2.0; val result = mutableListOf<Double>(); if (remainingPerSide > 0) { var currentRemaining = remainingPerSide; val sortedPlates = availablePlates.sortedByDescending { it.weight }; for (plate in sortedPlates) { val maxPairs = plate.quantity / 2; var pairsUsed = 0; while (currentRemaining >= plate.weight - 0.001 && pairsUsed < maxPairs) { result.add(plate.weight); currentRemaining -= plate.weight; pairsUsed++ } } }; result }
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("CALCULADORA INTELIGENTE") }, text = { Column { if (availableBars.isEmpty()) { Text("⚠️ Registra tu equipo", color = Color.Red) } else { Text("SOPORTE:", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00)); OutlinedCard(onClick = { expandedBarMenu = true }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFF121212), contentColor = Color.White)) { Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(text = selectedBar?.let { "${it.name} (${it.weight}kg)" } ?: "Seleccionar..."); Icon(Icons.Default.ArrowDropDown, contentDescription = null) } }; DropdownMenu(expanded = expandedBarMenu, onDismissRequest = { expandedBarMenu = false }) { availableBars.forEach { bar -> DropdownMenuItem(text = { Text("${bar.name} (${bar.weight}kg)") }, onClick = { selectedBar = bar; expandedBarMenu = false }) } }; if (!isExactPossible) { Text("No es posible armar ${targetWeight}kg.", color = Color.Red, style = MaterialTheme.typography.bodySmall); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { lowerSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) }; upperSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) } } }; Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.3f)); Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00)); if (platesNeeded.isEmpty()) { Text("SOLO EL SOPORTE", fontWeight = FontWeight.Black) } else { platesNeeded.groupBy { it }.forEach { (weight, list) -> Text("${list.size} x ${weight}kg", fontWeight = FontWeight.Black, fontSize = 18.sp) } } } } }, confirmButton = { Button(onClick = { onConfirm(currentTarget) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("OK") } })
 }
 
 @Composable
 fun TemplatePicker(templates: List<com.leo2026.weightlifting.data.entity.TemplateEntity>, onDismiss: () -> Unit, onSelect: (com.leo2026.weightlifting.data.entity.TemplateEntity) -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        titleContentColor = Color(0xFFFF6D00),
-        title = { Text("SELECCIONAR PLANTILLA") },
-        text = {
-            LazyColumn {
-                items(templates) { template ->
-                    TextButton(
-                        onClick = { onSelect(template) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(template.name, color = Color.White)
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
-        }
-    )
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), title = { Text("SELECCIONAR PLANTILLA") }, text = { LazyColumn { items(templates) { template -> TextButton(onClick = { onSelect(template) }, modifier = Modifier.fillMaxWidth()) { Text(template.name, color = Color.White) } } } }, confirmButton = {}, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
 }
 
 @Composable
 fun SaveTemplateDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
-        titleContentColor = Color(0xFFFF6D00),
-        title = { Text("GUARDAR PLANTILLA") },
-        text = {
-            TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre de la rutina") })
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("GUARDAR") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) }
-        }
-    )
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), title = { Text("GUARDAR PLANTILLA") }, text = { TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre de la rutina") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)) }, confirmButton = { Button(onClick = { onConfirm(name) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("GUARDAR") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
 }

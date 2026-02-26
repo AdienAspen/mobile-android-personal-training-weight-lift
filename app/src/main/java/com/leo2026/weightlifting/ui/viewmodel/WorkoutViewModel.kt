@@ -7,6 +7,12 @@ import com.leo2026.weightlifting.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+// Clase de apoyo para el resumen de sesión
+data class SessionSummary(
+    val names: String,
+    val categories: String
+)
+
 class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() {
 
     private val _currentSessionId = MutableStateFlow<String?>(null)
@@ -72,6 +78,18 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
 
     fun getSetsForSession(sessionId: String): Flow<List<SetEntryEntity>> {
         return repository.getSetsForSession(sessionId)
+    }
+
+    // --- MEJORADO: Obtener resumen real de nombres y categorías ---
+    fun getSessionSummary(sessionId: String): Flow<SessionSummary> {
+        return repository.getSetsForSession(sessionId).map { sets ->
+            if (sets.isEmpty()) return@map SessionSummary("Vacía", "General")
+            
+            val names = sets.map { it.exerciseNameSnapshot }.distinct().joinToString(", ")
+            val categories = sets.map { it.exerciseCategorySnapshot }.distinct().joinToString(", ")
+            
+            SessionSummary(names, categories)
+        }
     }
 
     fun startWorkout(name: String = "Sesión de Entrenamiento", templateId: String? = null) {
@@ -193,7 +211,6 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
-    // --- MEJORADO: Función para guardar con duración ---
     fun addSet(exerciseId: String, weight: Double, reps: Int, restSeconds: Int, durationMillis: Long) {
         val sessionId = _currentSessionId.value ?: return
         viewModelScope.launch {
