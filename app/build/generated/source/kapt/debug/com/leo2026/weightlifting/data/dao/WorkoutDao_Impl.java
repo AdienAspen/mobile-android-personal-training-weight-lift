@@ -50,7 +50,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `workout_sessions` (`id`,`startTime`,`endTime`,`name`,`templateId`) VALUES (?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `workout_sessions` (`id`,`startTime`,`endTime`,`name`,`templateId`,`sourceType`,`singleExerciseId`) VALUES (?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -76,6 +76,16 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           statement.bindNull(5);
         } else {
           statement.bindString(5, entity.getTemplateId());
+        }
+        if (entity.getSourceType() == null) {
+          statement.bindNull(6);
+        } else {
+          statement.bindString(6, entity.getSourceType());
+        }
+        if (entity.getSingleExerciseId() == null) {
+          statement.bindNull(7);
+        } else {
+          statement.bindString(7, entity.getSingleExerciseId());
         }
       }
     };
@@ -152,7 +162,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
 
   @Override
   public Object insertSessions(final List<WorkoutSessionEntity> sessions,
-      final Continuation<? super Unit> arg1) {
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -166,11 +176,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object insertSets(final List<SetEntryEntity> sets, final Continuation<? super Unit> arg1) {
+  public Object insertSets(final List<SetEntryEntity> sets,
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -184,12 +195,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
   public Object insertSession(final WorkoutSessionEntity session,
-      final Continuation<? super Unit> arg1) {
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -203,11 +214,11 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object insertSet(final SetEntryEntity set, final Continuation<? super Unit> arg1) {
+  public Object insertSet(final SetEntryEntity set, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -221,11 +232,11 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object deleteSet(final SetEntryEntity set, final Continuation<? super Unit> arg1) {
+  public Object deleteSet(final SetEntryEntity set, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -239,12 +250,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
   public Object endSession(final String sessionId, final long endTime,
-      final Continuation<? super Unit> arg2) {
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -271,11 +282,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           __preparedStmtOfEndSession.release(_stmt);
         }
       }
-    }, arg2);
+    }, $completion);
   }
 
   @Override
-  public Object getAllSessionsList(final Continuation<? super List<WorkoutSessionEntity>> arg0) {
+  public Object getAllSessionsList(
+      final Continuation<? super List<WorkoutSessionEntity>> $completion) {
     final String _sql = "SELECT * FROM workout_sessions";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -290,6 +302,8 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           final int _cursorIndexOfEndTime = CursorUtil.getColumnIndexOrThrow(_cursor, "endTime");
           final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
           final int _cursorIndexOfTemplateId = CursorUtil.getColumnIndexOrThrow(_cursor, "templateId");
+          final int _cursorIndexOfSourceType = CursorUtil.getColumnIndexOrThrow(_cursor, "sourceType");
+          final int _cursorIndexOfSingleExerciseId = CursorUtil.getColumnIndexOrThrow(_cursor, "singleExerciseId");
           final List<WorkoutSessionEntity> _result = new ArrayList<WorkoutSessionEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final WorkoutSessionEntity _item;
@@ -319,7 +333,19 @@ public final class WorkoutDao_Impl implements WorkoutDao {
             } else {
               _tmpTemplateId = _cursor.getString(_cursorIndexOfTemplateId);
             }
-            _item = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId);
+            final String _tmpSourceType;
+            if (_cursor.isNull(_cursorIndexOfSourceType)) {
+              _tmpSourceType = null;
+            } else {
+              _tmpSourceType = _cursor.getString(_cursorIndexOfSourceType);
+            }
+            final String _tmpSingleExerciseId;
+            if (_cursor.isNull(_cursorIndexOfSingleExerciseId)) {
+              _tmpSingleExerciseId = null;
+            } else {
+              _tmpSingleExerciseId = _cursor.getString(_cursorIndexOfSingleExerciseId);
+            }
+            _item = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId,_tmpSourceType,_tmpSingleExerciseId);
             _result.add(_item);
           }
           return _result;
@@ -328,11 +354,11 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg0);
+    }, $completion);
   }
 
   @Override
-  public Object getAllSetsList(final Continuation<? super List<SetEntryEntity>> arg0) {
+  public Object getAllSetsList(final Continuation<? super List<SetEntryEntity>> $completion) {
     final String _sql = "SELECT * FROM set_entries";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -414,7 +440,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg0);
+    }, $completion);
   }
 
   @Override
@@ -432,6 +458,8 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           final int _cursorIndexOfEndTime = CursorUtil.getColumnIndexOrThrow(_cursor, "endTime");
           final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
           final int _cursorIndexOfTemplateId = CursorUtil.getColumnIndexOrThrow(_cursor, "templateId");
+          final int _cursorIndexOfSourceType = CursorUtil.getColumnIndexOrThrow(_cursor, "sourceType");
+          final int _cursorIndexOfSingleExerciseId = CursorUtil.getColumnIndexOrThrow(_cursor, "singleExerciseId");
           final List<WorkoutSessionEntity> _result = new ArrayList<WorkoutSessionEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final WorkoutSessionEntity _item;
@@ -461,7 +489,19 @@ public final class WorkoutDao_Impl implements WorkoutDao {
             } else {
               _tmpTemplateId = _cursor.getString(_cursorIndexOfTemplateId);
             }
-            _item = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId);
+            final String _tmpSourceType;
+            if (_cursor.isNull(_cursorIndexOfSourceType)) {
+              _tmpSourceType = null;
+            } else {
+              _tmpSourceType = _cursor.getString(_cursorIndexOfSourceType);
+            }
+            final String _tmpSingleExerciseId;
+            if (_cursor.isNull(_cursorIndexOfSingleExerciseId)) {
+              _tmpSingleExerciseId = null;
+            } else {
+              _tmpSingleExerciseId = _cursor.getString(_cursorIndexOfSingleExerciseId);
+            }
+            _item = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId,_tmpSourceType,_tmpSingleExerciseId);
             _result.add(_item);
           }
           return _result;
@@ -478,7 +518,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
   }
 
   @Override
-  public Object getLatestSession(final Continuation<? super WorkoutSessionEntity> arg0) {
+  public Object getLatestSession(final Continuation<? super WorkoutSessionEntity> $completion) {
     final String _sql = "SELECT * FROM workout_sessions ORDER BY startTime DESC LIMIT 1";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -493,6 +533,8 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           final int _cursorIndexOfEndTime = CursorUtil.getColumnIndexOrThrow(_cursor, "endTime");
           final int _cursorIndexOfName = CursorUtil.getColumnIndexOrThrow(_cursor, "name");
           final int _cursorIndexOfTemplateId = CursorUtil.getColumnIndexOrThrow(_cursor, "templateId");
+          final int _cursorIndexOfSourceType = CursorUtil.getColumnIndexOrThrow(_cursor, "sourceType");
+          final int _cursorIndexOfSingleExerciseId = CursorUtil.getColumnIndexOrThrow(_cursor, "singleExerciseId");
           final WorkoutSessionEntity _result;
           if (_cursor.moveToFirst()) {
             final String _tmpId;
@@ -521,7 +563,19 @@ public final class WorkoutDao_Impl implements WorkoutDao {
             } else {
               _tmpTemplateId = _cursor.getString(_cursorIndexOfTemplateId);
             }
-            _result = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId);
+            final String _tmpSourceType;
+            if (_cursor.isNull(_cursorIndexOfSourceType)) {
+              _tmpSourceType = null;
+            } else {
+              _tmpSourceType = _cursor.getString(_cursorIndexOfSourceType);
+            }
+            final String _tmpSingleExerciseId;
+            if (_cursor.isNull(_cursorIndexOfSingleExerciseId)) {
+              _tmpSingleExerciseId = null;
+            } else {
+              _tmpSingleExerciseId = _cursor.getString(_cursorIndexOfSingleExerciseId);
+            }
+            _result = new WorkoutSessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpName,_tmpTemplateId,_tmpSourceType,_tmpSingleExerciseId);
           } else {
             _result = null;
           }
@@ -531,7 +585,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg0);
+    }, $completion);
   }
 
   @Override
@@ -637,7 +691,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
 
   @Override
   public Object getSetsForSessionList(final String sessionId,
-      final Continuation<? super List<SetEntryEntity>> arg1) {
+      final Continuation<? super List<SetEntryEntity>> $completion) {
     final String _sql = "SELECT * FROM set_entries WHERE sessionId = ?";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -725,12 +779,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
   public Object getLastSetForExercise(final String exerciseId,
-      final Continuation<? super SetEntryEntity> arg1) {
+      final Continuation<? super SetEntryEntity> $completion) {
     final String _sql = "SELECT * FROM set_entries WHERE exerciseId = ? ORDER BY timestamp DESC LIMIT 1";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -818,12 +872,12 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
   public Object getPersonalRecord(final String exerciseId,
-      final Continuation<? super Double> arg1) {
+      final Continuation<? super Double> $completion) {
     final String _sql = "SELECT MAX(weight) FROM set_entries WHERE exerciseId = ?";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -857,7 +911,7 @@ public final class WorkoutDao_Impl implements WorkoutDao {
           _statement.release();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @NonNull

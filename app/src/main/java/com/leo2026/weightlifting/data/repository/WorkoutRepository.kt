@@ -15,11 +15,9 @@ class WorkoutRepository(
     val completedSessions: Flow<List<WorkoutSessionEntity>> = workoutDao.getCompletedSessions()
     val allTemplates: Flow<List<TemplateEntity>> = templateDao.getAllTemplates()
     
-    // User Profile
     val userProfile: Flow<UserEntity?> = userDao.getUser()
     suspend fun insertUser(user: UserEntity) = userDao.insertUser(user)
 
-    // Training Assets
     val allBars: Flow<List<BarEntity>> = assetDao.getAllBars()
     val allPlates: Flow<List<PlateEntity>> = assetDao.getAllPlates()
 
@@ -28,83 +26,52 @@ class WorkoutRepository(
     suspend fun insertPlate(plate: PlateEntity) = assetDao.insertPlate(plate)
     suspend fun deletePlate(plate: PlateEntity) = assetDao.deletePlate(plate)
 
-    suspend fun insertExercise(exercise: ExerciseEntity) {
-        exerciseDao.insertExercise(exercise)
-    }
+    suspend fun insertExercise(exercise: ExerciseEntity) = exerciseDao.insertExercise(exercise)
+    suspend fun getExerciseById(id: String): ExerciseEntity? = exerciseDao.getExerciseById(id)
+    suspend fun updateExercise(exercise: ExerciseEntity) = exerciseDao.updateExercise(exercise)
+    suspend fun deleteExercise(exercise: ExerciseEntity) = exerciseDao.softDeleteExercise(exercise.id)
 
-    suspend fun getExerciseById(id: String): ExerciseEntity? {
-        return exerciseDao.getExerciseById(id)
-    }
-
-    suspend fun updateExercise(exercise: ExerciseEntity) {
-        exerciseDao.updateExercise(exercise)
-    }
-
-    suspend fun deleteExercise(exercise: ExerciseEntity) {
-        exerciseDao.softDeleteExercise(exercise.id)
-    }
-
-    suspend fun startNewSession(name: String, templateId: String? = null): String {
+    // --- MEJORADO: Ahora acepta el origen de la sesión ---
+    suspend fun startNewSession(
+        name: String, 
+        templateId: String? = null, 
+        sourceType: String = "EMPTY",
+        singleExerciseId: String? = null
+    ): String {
         val id = java.util.UUID.randomUUID().toString()
         val session = WorkoutSessionEntity(
             id = id,
             startTime = System.currentTimeMillis(),
             name = name,
-            templateId = templateId
+            templateId = templateId,
+            sourceType = sourceType,
+            singleExerciseId = singleExerciseId
         )
         workoutDao.insertSession(session)
         return id
     }
 
-    suspend fun finishSession(sessionId: String) {
-        workoutDao.endSession(sessionId, System.currentTimeMillis())
-    }
+    suspend fun finishSession(sessionId: String) = workoutDao.endSession(sessionId, System.currentTimeMillis())
 
-    suspend fun saveAsTemplate(name: String, exerciseIds: List<String>) {
-        val templateId = java.util.UUID.randomUUID().toString()
+    suspend fun saveAsTemplate(name: String, exerciseIds: List<String>, existingTemplateId: String? = null) {
+        val templateId = existingTemplateId ?: java.util.UUID.randomUUID().toString()
         templateDao.insertTemplate(TemplateEntity(templateId, name))
+        templateDao.deleteExercisesFromTemplate(templateId)
         exerciseIds.forEachIndexed { index, exerciseId ->
-            templateDao.insertTemplateExercise(
-                TemplateExerciseEntity(templateId, exerciseId, index)
-            )
+            templateDao.insertTemplateExercise(TemplateExerciseEntity(templateId, exerciseId, index))
         }
     }
 
-    suspend fun updateTemplateName(templateId: String, newName: String) {
-        templateDao.updateTemplateName(templateId, newName)
-    }
+    suspend fun updateTemplateName(templateId: String, newName: String) = templateDao.updateTemplateName(templateId, newName)
+    suspend fun deleteTemplate(templateId: String) = templateDao.softDeleteTemplate(templateId)
+    suspend fun getLastSession(): WorkoutSessionEntity? = workoutDao.getLatestSession()
 
-    suspend fun deleteTemplate(templateId: String) {
-        templateDao.softDeleteTemplate(templateId)
-    }
-
-    suspend fun getLastSession(): WorkoutSessionEntity? {
-        return workoutDao.getLatestSession()
-    }
-
-    fun getExercisesForTemplate(templateId: String): Flow<List<ExerciseEntity>> {
-        return templateDao.getExercisesForTemplate(templateId)
-    }
-
-    fun getSetsForSession(sessionId: String): Flow<List<SetEntryEntity>> {
-        return workoutDao.getSetsForSession(sessionId)
-    }
-
-    suspend fun getSetsForSessionList(sessionId: String): List<SetEntryEntity> {
-        return workoutDao.getSetsForSessionList(sessionId)
-    }
-
-    suspend fun addSet(set: SetEntryEntity) {
-        workoutDao.insertSet(set)
-    }
-
-    suspend fun getLastSetForExercise(exerciseId: String): SetEntryEntity? {
-        return workoutDao.getLastSetForExercise(exerciseId)
-    }
-
-    suspend fun getPersonalRecord(exerciseId: String): Double {
-        return workoutDao.getPersonalRecord(exerciseId) ?: 0.0
-    }
+    fun getExercisesForTemplate(templateId: String): Flow<List<ExerciseEntity>> = templateDao.getExercisesForTemplate(templateId)
+    fun getSetsForSession(sessionId: String): Flow<List<SetEntryEntity>> = workoutDao.getSetsForSession(sessionId)
+    suspend fun getSetsForSessionList(sessionId: String): List<SetEntryEntity> = workoutDao.getSetsForSessionList(sessionId)
+    suspend fun addSet(set: SetEntryEntity) = workoutDao.insertSet(set)
+    suspend fun getLastSetForExercise(exerciseId: String): SetEntryEntity? = workoutDao.getLastSetForExercise(exerciseId)
+    suspend fun getPersonalRecord(exerciseId: String): Double = workoutDao.getPersonalRecord(exerciseId) ?: 0.0
 
     suspend fun getBackupBundle(): com.leo2026.weightlifting.data.backup.BackupBundle {
         return com.leo2026.weightlifting.data.backup.BackupBundle(

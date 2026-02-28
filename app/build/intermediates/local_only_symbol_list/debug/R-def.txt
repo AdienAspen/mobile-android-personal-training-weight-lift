@@ -10,5 +10,6 @@ color secondary_grey
 color teal_200
 color teal_700
 color white
+font rubik_variable
 string app_name
 style Theme.LEO2026

@@ -6,7 +6,7 @@ import androidx.room.*
 data class ExerciseEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val category: String, // Chest, Back, etc.
+    val category: String,
     val defaultRestSeconds: Int = 90,
     val isDeleted: Boolean = false
 )
@@ -17,7 +17,10 @@ data class WorkoutSessionEntity(
     val startTime: Long,
     val endTime: Long? = null,
     val name: String,
-    val templateId: String? = null
+    val templateId: String? = null,
+    // --- NUEVO: Para saber de dónde vino la sesión ---
+    val sourceType: String = "EMPTY", // EMPTY, TEMPLATE, SINGLE_EXERCISE
+    val singleExerciseId: String? = null // Si fue SINGLE_EXERCISE, guardamos cuál
 )
 
 @Entity(
@@ -44,16 +47,12 @@ data class SetEntryEntity(
     val exerciseId: String,
     val weight: Double,
     val reps: Int,
-    val setType: String = "WORKING", // WORKING, WARMUP, DROP, AMRAP
+    val setType: String = "WORKING",
     val timestamp: Long,
     val rpe: Int? = null,
-
-    // Snapshots
     val exerciseNameSnapshot: String = "",
     val exerciseCategorySnapshot: String = "",
     val exerciseRestSnapshot: Int = 0,
-
-    // --- NUEVO: Duración de la serie ---
     val durationMillis: Long = 0
 )
 
@@ -82,8 +81,6 @@ data class TemplateExerciseEntity(
     val exerciseId: String,
     val orderIndex: Int
 )
-
-// --- TRAINING ASSETS ---
 
 @Entity(tableName = "bars")
 data class BarEntity(

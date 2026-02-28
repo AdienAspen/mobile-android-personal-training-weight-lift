@@ -75,7 +75,7 @@ public final class UserDao_Impl implements UserDao {
   }
 
   @Override
-  public Object insertUser(final UserEntity user, final Continuation<? super Unit> $completion) {
+  public Object insertUser(final UserEntity user, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -89,7 +89,7 @@ public final class UserDao_Impl implements UserDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override

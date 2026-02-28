@@ -15,11 +15,12 @@ import com.leo2026.weightlifting.data.database.AppDatabase
 import com.leo2026.weightlifting.data.repository.WorkoutRepository
 import com.leo2026.weightlifting.ui.screen.MainScreen
 import com.leo2026.weightlifting.ui.viewmodel.WorkoutViewModel
+import com.leo2026.weightlifting.ui.theme.LEO2026Typography // Importamos la nueva tipografía
 
-// PALETA OFICIAL STITCH
+// PALETA OFICIAL STITCH - AJUSTADA A TONOS CÁLIDOS (Adiós al azul)
 private val OrangePrimary = Color(0xFFFF6D00)
-private val CharcoalBackground = Color(0xFF121212)
-private val DarkGreySurface = Color(0xFF1E1E1E)
+private val CharcoalBackground = Color(0xFF121111) // Un tono más cálido que el gris puro
+private val DarkGreySurface = Color(0xFF1E1C1B)    // Superficie con matiz tierra suave
 private val PureWhite = Color(0xFFFFFFFF)
 
 private val LEO2026DarkColorScheme = darkColorScheme(
@@ -31,13 +32,14 @@ private val LEO2026DarkColorScheme = darkColorScheme(
     onSurface = PureWhite,
     background = CharcoalBackground,
     onBackground = PureWhite,
-    surfaceTint = Color.Transparent // ESTO MATA EL COLOR CAFÉ
+    surfaceTint = Color.Transparent
 )
 
 @Composable
 fun LEO2026Theme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = LEO2026DarkColorScheme,
+        typography = LEO2026Typography, // Aplicamos Rubik (vía Type.kt)
         content = content
     )
 }
@@ -52,7 +54,7 @@ class MainActivity : ComponentActivity() {
             database.workoutDao(),
             database.templateDao(),
             database.assetDao(),
-            database.userDao() // Arreglado: Faltaba el UserDao en el repositorio
+            database.userDao()
         )
         val viewModelFactory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -64,7 +66,7 @@ class MainActivity : ComponentActivity() {
             LEO2026Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = CharcoalBackground // FORZAMOS FONDO NEGRO GLOBAL
+                    color = CharcoalBackground
                 ) {
                     val viewModel: WorkoutViewModel = viewModel(factory = viewModelFactory)
                     MainScreen(viewModel)

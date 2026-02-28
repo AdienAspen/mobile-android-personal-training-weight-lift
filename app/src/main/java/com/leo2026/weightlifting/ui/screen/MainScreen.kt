@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,7 +33,7 @@ fun MainScreen(viewModel: WorkoutViewModel) {
     Scaffold(
         containerColor = CharcoalBackground,
         topBar = {
-            // MENÚ GLOBAL SUPER-TOP (Analítica, Home, Ajustes)
+            // MENÚ GLOBAL SUPER-TOP
             if (currentDestination != null && !currentDestination.startsWith("details")) {
                 TopAppBar(
                     title = { },
@@ -42,7 +43,9 @@ fun MainScreen(viewModel: WorkoutViewModel) {
                         }
                         IconButton(onClick = {
                             navController.navigate("home") {
-                                popUpTo("home") { inclusive = true }
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    inclusive = false
+                                }
                                 launchSingleTop = true
                             }
                         }) {
@@ -78,12 +81,21 @@ fun MainScreen(viewModel: WorkoutViewModel) {
                         label = { Text(label) },
                         selected = isSelected,
                         onClick = {
+                            // --- NAVEGACIÓN IMPERATIVA Y MANDATORIA ---
+
+                            // Si el usuario pulsa "Entrenar", forzamos el reset del launcher
+                            if (route == "workout") {
+                                viewModel.resetToWorkoutLauncher()
+                            }
+
                             navController.navigate(route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+                                // Al navegar vía Bottom Menu, limpiamos el historial de esa pestaña
+                                // para volver siempre a la "Página Madre" (Parent).
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = false // NO guardamos estado para evitar que se quede "pegada"
                                 }
                                 launchSingleTop = true
-                                restoreState = true
+                                restoreState = false // NAVEGACIÓN LIMPIA: No restauramos niveles profundos
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
@@ -106,7 +118,10 @@ fun MainScreen(viewModel: WorkoutViewModel) {
                 composable("home") {
                     HomeScreen(
                         viewModel = viewModel,
-                        onStartWorkout = { navController.navigate("workout") },
+                        onStartWorkout = {
+                            viewModel.resetToWorkoutLauncher()
+                            navController.navigate("workout")
+                        },
                         onNavigateToHistory = { navController.navigate("history") }
                     )
                 }

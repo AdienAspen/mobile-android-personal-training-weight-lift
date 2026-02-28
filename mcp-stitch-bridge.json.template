@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "httpUrl": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": ## INSERT YOUR API-KEY HERE "$%&/()/&%$/(), etc, etc..",
+        "X-Stitch-Project-Id": "10243739691007292124",
+        "Content-Type": "application/json",
+        "X-Android-Studio-Version": "2025.2.3"
+      },
+      "timeout": 60000
+    }
+  }
+}

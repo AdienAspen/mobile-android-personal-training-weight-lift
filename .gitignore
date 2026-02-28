@@ -14,3 +14,6 @@
 *.zip
 *.rar
 local.properties
+
+# BLINDAJE DE SECRETOS MCP
+mcp-stitch-bridge.json

@@ -51,13 +51,12 @@ fun WorkoutScreen(
     val plates by viewModel.allPlates.collectAsState()
     val timerTrigger by viewModel.timerTrigger.collectAsState()
     val prEvent by viewModel.newPREvents.collectAsState()
+    val partialRoutineExercises by viewModel.showPartialTemplateDialog.collectAsState()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddExercise by remember { mutableStateOf(false) }
-    var showSaveTemplate by remember { mutableStateOf(false) }
     var showTemplatePicker by remember { mutableStateOf(false) }
-    
     var calculatorTarget by remember { mutableStateOf<Pair<Double, (Double) -> Unit>?>(null) }
     var activeExerciseId by remember { mutableStateOf<String?>(null) }
 
@@ -226,6 +225,30 @@ fun WorkoutScreen(
         AddExerciseDialog(onDismiss = { showAddExercise = false }, onConfirm = { name, category, rest -> if (viewModel.addExercise(name, category, rest)) showAddExercise = false })
     }
 
+    partialRoutineExercises?.let {
+        var newTemplateName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPartialDialog() },
+            containerColor = DarkGreySurface,
+            titleContentColor = OrangePrimary,
+            textContentColor = Color.White,
+            title = { Text("Rutina Incompleta") },
+            text = {
+                Column {
+                    Text("No completaste todos los ejercicios. ¿Deseas guardar los realizados como una nueva rutina?")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(value = newTemplateName, onValueChange = { newTemplateName = it }, label = { Text("Nombre de nueva rutina") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
+                }
+            },
+            confirmButton = {
+                Button(onClick = { if (newTemplateName.isNotBlank()) viewModel.finishWorkoutAndSavePartial(newTemplateName) }, colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary, contentColor = Color.Black)) { Text("GUARDAR") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissPartialDialog() }) { Text("NO, GRACIAS", color = Color.Gray) }
+            }
+        )
+    }
+
     calculatorTarget?.let { (targetWeight, onWeightSelected) ->
         PlateCalculatorDialog(targetWeight = targetWeight, availableBars = bars, availablePlates = plates, onConfirm = { finalWeight -> onWeightSelected(finalWeight); calculatorTarget = null }, onDismiss = { calculatorTarget = null })
     }
@@ -246,6 +269,15 @@ fun ExerciseCard(
     var weight by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
     var rest by remember { mutableStateOf(exercise.defaultRestSeconds.toString()) }
+
+    // --- CARGA DE HISTORIAL (PRE-LLENADO) ---
+    LaunchedEffect(exercise.id) {
+        val lastSet = viewModel.getLastSetForExercise(exercise.id)
+        if (lastSet != null) {
+            weight = lastSet.weight.toString()
+            reps = lastSet.reps.toString()
+        }
+    }
 
     var isRunningSet by remember { mutableStateOf(false) }
     var startTime by remember { mutableLongStateOf(0L) }
@@ -268,14 +300,10 @@ fun ExerciseCard(
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E),
-            contentColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E), contentColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = exercise.name.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (isRunningSet) Color(0xFFFF6D00) else Color.White)
-
             Spacer(modifier = Modifier.height(16.dp))
             
             if (isRunningSet) {
@@ -286,12 +314,26 @@ fun ExerciseCard(
             }
 
             if (!isRunningSet) {
-                Button(onClick = {
-                    val w = weight.toDoubleOrNull() ?: 0.0
-                    val r = reps.toIntOrNull() ?: 0
-                    val rSec = rest.toIntOrNull() ?: 0
-                    if (w <= 0 || r <= 0 || rSec <= 0) { onShowError("⚠️ Completa: Peso, Reps y Descanso") } else { onActivate(); isRunningSet = true }
-                }, modifier = Modifier.fillMaxWidth().height(64.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.Black), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00))) {
+                Button(
+                    onClick = {
+                        val w = weight.toDoubleOrNull() ?: 0.0
+                        val r = reps.toIntOrNull() ?: 0
+                        
+                        // --- BLINDAJE: VALIDACIÓN DE INVENTARIO ---
+                        if (w <= 0 || r <= 0) {
+                            onShowError("⚠️ Completa: Peso y Reps")
+                        } else if (!viewModel.isWeightPossible(w)) {
+                            onShowError("⚠️ Peso imposible con tu equipo actual")
+                        } else {
+                            onActivate()
+                            isRunningSet = true
+                        }
+                    }, 
+                    modifier = Modifier.fillMaxWidth().height(64.dp), 
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black), 
+                    shape = RoundedCornerShape(12.dp), 
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6D00))
+                ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFFFF6D00))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("INICIAR SERIE", color = Color(0xFFFF6D00), fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -308,9 +350,7 @@ fun ExerciseCard(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text("FINALIZAR", color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     }
-                    TextButton(onClick = { isRunningSet = false; onDeactivate() }) {
-                        Text("CANCELAR ESTA SERIE", color = Color.Gray, fontSize = 12.sp)
-                    }
+                    TextButton(onClick = { isRunningSet = false; onDeactivate() }) { Text("CANCELAR ESTA SERIE", color = Color.Gray, fontSize = 12.sp) }
                 }
             }
 
@@ -318,69 +358,43 @@ fun ExerciseCard(
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text("PESO (KG)", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFF6D00), fontWeight = FontWeight.Black, fontSize = 18.sp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFF6D00),
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-                        focusedContainerColor = Color(0xFF121212),
-                        unfocusedContainerColor = Color(0xFF121212),
-                        focusedLabelColor = Color(0xFFFF6D00)
-                    ),
+                    value = weight, 
+                    onValueChange = { weight = it }, 
+                    label = { Text("PESO (KG)", fontSize = 9.sp, fontWeight = FontWeight.Bold) }, 
+                    modifier = Modifier.weight(1f), 
+                    shape = RoundedCornerShape(12.dp), 
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFF6D00), fontWeight = FontWeight.Black, fontSize = 18.sp), 
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFF6D00), unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f), focusedContainerColor = Color(0xFF121212), unfocusedContainerColor = Color(0xFF121212), focusedLabelColor = Color(0xFFFF6D00)), 
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 
-                IconButton(onClick = { val w = weight.toDoubleOrNull() ?: 0.0; if (w > 0) onCalculatePlates(w) { weight = it.toString() } }, modifier = Modifier.size(48.dp).background(Color.Black, RoundedCornerShape(12.dp))) {
-                    Icon(Icons.Default.Calculate, contentDescription = null, tint = Color(0xFFFF6D00))
-                }
-
+                IconButton(onClick = { val w = weight.toDoubleOrNull() ?: 0.0; if (w > 0) onCalculatePlates(w) { weight = it.toString() } }, modifier = Modifier.size(48.dp).background(Color.Black, RoundedCornerShape(12.dp))) { Icon(Icons.Default.Calculate, contentDescription = null, tint = Color(0xFFFF6D00)) }
+                
                 OutlinedTextField(
-                    value = reps,
-                    onValueChange = { reps = it },
-                    label = { Text("REPS", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.weight(0.8f),
-                    shape = RoundedCornerShape(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFF6D00),
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-                        focusedContainerColor = Color(0xFF121212),
-                        unfocusedContainerColor = Color(0xFF121212)
-                    ),
+                    value = reps, 
+                    onValueChange = { reps = it }, 
+                    label = { Text("REPS", fontSize = 9.sp, fontWeight = FontWeight.Bold) }, 
+                    modifier = Modifier.weight(0.8f), 
+                    shape = RoundedCornerShape(12.dp), 
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp), 
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFF6D00), unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f), focusedContainerColor = Color(0xFF121212), unfocusedContainerColor = Color(0xFF121212)), 
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 
                 OutlinedTextField(
-                    value = rest,
-                    onValueChange = { rest = it },
-                    label = { Text("REST (S)", fontSize = 9.sp, fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.weight(0.8f),
-                    shape = RoundedCornerShape(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFF6D00),
-                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-                        focusedContainerColor = Color(0xFF121212),
-                        unfocusedContainerColor = Color(0xFF121212)
-                    ),
+                    value = rest, 
+                    onValueChange = { rest = it }, 
+                    label = { Text("REST (S)", fontSize = 9.sp, fontWeight = FontWeight.Bold) }, 
+                    modifier = Modifier.weight(0.8f), 
+                    shape = RoundedCornerShape(12.dp), 
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp), 
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFF6D00), unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f), focusedContainerColor = Color(0xFF121212), unfocusedContainerColor = Color(0xFF121212)), 
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
             Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color.Gray.copy(alpha = 0.2f))
-
-            Column {
-                exerciseSets.forEachIndexed { index, set ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00))
-                    }
-                }
-            }
+            Column { exerciseSets.forEachIndexed { index, set -> Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("Serie ${index + 1}: ${set.weight}kg x ${set.reps}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White); Text("${set.durationMillis / 1000}s", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00)) } } }
         }
     }
 }
@@ -390,7 +404,7 @@ fun AddExerciseDialog(onDismiss: () -> Unit, onConfirm: (String, String, Int) ->
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var rest by remember { mutableStateOf("90") }
-    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("NUEVO EJERCICIO") }, text = { Column { TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)) } }, confirmButton = { Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("AÑADIR") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("Nuevo Ejercicio") }, text = { Column { TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = category, onValueChange = { category = it }, label = { Text("Categoría") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)); Spacer(modifier = Modifier.height(8.dp)); TextField(value = rest, onValueChange = { rest = it }, label = { Text("Descanso (s)") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)) } }, confirmButton = { Button(onClick = { onConfirm(name, category, rest.toIntOrNull() ?: 90) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("AÑADIR") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -404,16 +418,10 @@ fun PlateCalculatorDialog(targetWeight: Double, availableBars: List<BarEntity>, 
     val lowerSuggestion = reachableWeights.filter { it < currentTarget }.lastOrNull()
     val upperSuggestion = reachableWeights.filter { it > currentTarget }.firstOrNull()
     val platesNeeded = remember(selectedBar, availablePlates, currentTarget) { val barWeight = selectedBar?.weight ?: 0.0; val remainingPerSide = (currentTarget - barWeight) / 2.0; val result = mutableListOf<Double>(); if (remainingPerSide > 0) { var currentRemaining = remainingPerSide; val sortedPlates = availablePlates.sortedByDescending { it.weight }; for (plate in sortedPlates) { val maxPairs = plate.quantity / 2; var pairsUsed = 0; while (currentRemaining >= plate.weight - 0.001 && pairsUsed < maxPairs) { result.add(plate.weight); currentRemaining -= plate.weight; pairsUsed++ } } }; result }
-    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("CALCULADORA INTELIGENTE") }, text = { Column { if (availableBars.isEmpty()) { Text("⚠️ Registra tu equipo", color = Color.Red) } else { Text("SOPORTE:", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00)); OutlinedCard(onClick = { expandedBarMenu = true }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFF121212), contentColor = Color.White)) { Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(text = selectedBar?.let { "${it.name} (${it.weight}kg)" } ?: "Seleccionar..."); Icon(Icons.Default.ArrowDropDown, contentDescription = null) } }; DropdownMenu(expanded = expandedBarMenu, onDismissRequest = { expandedBarMenu = false }) { availableBars.forEach { bar -> DropdownMenuItem(text = { Text("${bar.name} (${bar.weight}kg)") }, onClick = { selectedBar = bar; expandedBarMenu = false }) } }; if (!isExactPossible) { Text("No es posible armar ${targetWeight}kg.", color = Color.Red, style = MaterialTheme.typography.bodySmall); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { lowerSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) }; upperSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) } } }; Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.3f)); Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00)); if (platesNeeded.isEmpty()) { Text("SOLO EL SOPORTE", fontWeight = FontWeight.Black) } else { platesNeeded.groupBy { it }.forEach { (weight, list) -> Text("${list.size} x ${weight}kg", fontWeight = FontWeight.Black, fontSize = 18.sp) } } } } }, confirmButton = { Button(onClick = { onConfirm(currentTarget) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("OK") } })
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), textContentColor = Color.White, title = { Text("Calculadora Inteligente") }, text = { Column { if (availableBars.isEmpty()) { Text("⚠️ Registra tu equipo", color = Color.Red) } else { Text("SOPORTE:", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00)); OutlinedCard(onClick = { expandedBarMenu = true }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), colors = CardDefaults.outlinedCardColors(containerColor = Color(0xFF121212), contentColor = Color.White)) { Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(text = selectedBar?.let { "${it.name} (${it.weight}kg)" } ?: "Seleccionar..."); Icon(Icons.Default.ArrowDropDown, contentDescription = null) } }; DropdownMenu(expanded = expandedBarMenu, onDismissRequest = { expandedBarMenu = false }) { availableBars.forEach { bar -> DropdownMenuItem(text = { Text("${bar.name} (${bar.weight}kg)") }, onClick = { selectedBar = bar; expandedBarMenu = false }) } }; if (!isExactPossible) { Text("No es posible armar ${targetWeight}kg.", color = Color.Red, style = MaterialTheme.typography.bodySmall); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { lowerSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) }; upperSuggestion?.let { SuggestionChip(onClick = { currentTarget = it }, label = { Text("${it}kg") }) } } }; Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.3f)); Text("DESGLOSE PARA ${currentTarget}kg:", fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00)); if (platesNeeded.isEmpty()) { Text("SOLO EL SOPORTE", fontWeight = FontWeight.Black) } else { platesNeeded.groupBy { it }.forEach { (weight, list) -> Text("${list.size} x ${weight}kg", fontWeight = FontWeight.Black, fontSize = 18.sp) } } } } }, confirmButton = { Button(onClick = { onConfirm(currentTarget) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("OK") } })
 }
 
 @Composable
 fun TemplatePicker(templates: List<com.leo2026.weightlifting.data.entity.TemplateEntity>, onDismiss: () -> Unit, onSelect: (com.leo2026.weightlifting.data.entity.TemplateEntity) -> Unit) {
-    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), title = { Text("SELECCIONAR PLANTILLA") }, text = { LazyColumn { items(templates) { template -> TextButton(onClick = { onSelect(template) }, modifier = Modifier.fillMaxWidth()) { Text(template.name, color = Color.White) } } } }, confirmButton = {}, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
-}
-
-@Composable
-fun SaveTemplateDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), title = { Text("GUARDAR PLANTILLA") }, text = { TextField(value = name, onValueChange = { name = it }, label = { Text("Nombre de la rutina") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)) }, confirmButton = { Button(onClick = { onConfirm(name) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) { Text("GUARDAR") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF1E1E1E), titleContentColor = Color(0xFFFF6D00), title = { Text("Seleccionar Rutina") }, text = { LazyColumn { items(templates) { template -> TextButton(onClick = { onSelect(template) }, modifier = Modifier.fillMaxWidth()) { Text(template.name, color = Color.White) } } } }, confirmButton = {}, dismissButton = { TextButton(onClick = onDismiss) { Text("CANCELAR", color = Color(0xFFFF6D00)) } })
 }

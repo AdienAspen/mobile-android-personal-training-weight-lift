@@ -32,13 +32,10 @@ fun HomeScreen(
 ) {
     val user by viewModel.userProfile.collectAsState()
     val completedSessions by viewModel.completedSessions.collectAsState()
-    var showRegistration by remember { mutableStateOf(false) }
-
-    LaunchedEffect(user) {
-        if (user == null) {
-            showRegistration = true
-        }
-    }
+    
+    // --- REPARACIÓN DE PERSISTENCIA ---
+    // Usamos el valor del user directamente para controlar el diálogo, evitando el rebote del LaunchedEffect
+    val isUserRegistered = user != null
 
     // --- ALGORITMO DE ANTIGÜEDAD (Time Ago) ---
     fun getTimeAgo(time: Long): String {
@@ -87,7 +84,7 @@ fun HomeScreen(
             ) {
                 Text(text = "RENDIMIENTO", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6D00))
                 Text(
-                    text = user?.let { "${it.firstName} ${it.lastName}" } ?: "INVITADO",
+                    text = user?.let { "${it.firstName} ${it.lastName}" } ?: "CARGANDO...",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Black,
                     color = Color.White
@@ -139,8 +136,8 @@ fun HomeScreen(
                 item { Text("Aún no hay sesiones registradas.", color = Color.Gray, modifier = Modifier.padding(vertical = 16.dp)) }
             } else {
                 items(completedSessions.take(2)) { session ->
-                    // Recuperamos el resumen mejorado (Nombres y Categorías)
-                    val summary by viewModel.getSessionSummary(session.id).collectAsState(initial = com.leo2026.weightlifting.ui.viewmodel.SessionSummary("...", "..."))
+                    val summaryState = viewModel.getSessionSummary(session.id).collectAsState(initial = null)
+                    val summary = summaryState.value
                     
                     Card(
                         modifier = Modifier
@@ -153,34 +150,31 @@ fun HomeScreen(
                             modifier = Modifier.padding(20.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Icono Izquierda (Dinámico)
                             Box(
                                 modifier = Modifier.size(48.dp).background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                val icon = if (summary.names.contains(",")) Icons.Default.Bolt else Icons.Default.FitnessCenter
+                                val icon = if (summary?.names?.contains(",") == true) Icons.Default.Bolt else Icons.Default.FitnessCenter
                                 Icon(icon, contentDescription = null, tint = Color(0xFFFF6D00), modifier = Modifier.size(24.dp))
                             }
                             
                             Spacer(modifier = Modifier.width(16.dp))
                             
-                            // Info Central: DOBLE LÍNEA Y FUENTE COMPACTA
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = summary.names.uppercase(), 
+                                    text = summary?.names?.uppercase() ?: "CARGANDO...", 
                                     fontWeight = FontWeight.Black, 
                                     color = Color.White, 
-                                    fontSize = 13.sp, // 3 puntos menos
+                                    fontSize = 13.sp,
                                     lineHeight = 16.sp,
-                                    maxLines = 2, // Permite 2 líneas
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(getTimeAgo(session.startTime), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
                                     Text(" • ", color = Color.Gray)
-                                    // CATEGORÍA REAL DEL SNAPSHOT
                                     Text(
-                                        text = summary.categories, 
+                                        text = summary?.categories ?: "General", 
                                         color = Color(0xFFFF6D00), 
                                         style = MaterialTheme.typography.labelSmall,
                                         maxLines = 1,
@@ -189,13 +183,12 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Badge de Tendencia
                             Surface(
                                 color = Color(0xFFFF6D00).copy(alpha = 0.1f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    text = if (summary.names.contains(",")) "+VOL" else "MANTENIDO",
+                                    text = if (summary?.names?.contains(",") == true) "+VOL" else "MANTENIDO", 
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFFFF6D00),
@@ -227,25 +220,43 @@ fun HomeScreen(
         }
     }
 
-    if (showRegistration) {
-        var firstName by remember { mutableStateOf("") }
-        var lastName by remember { mutableStateOf("") }
+    // --- DIÁLOGO DE REGISTRO ESTABILIZADO ---
+    if (!isUserRegistered) {
+        var inputName by remember { mutableStateOf("") }
+        var inputLastName by remember { mutableStateOf("") }
 
         AlertDialog(
             onDismissRequest = { },
             containerColor = Color(0xFF1E1E1E),
             titleContentColor = Color(0xFFFF6D00),
-            title = { Text("BIENVENIDO A LEO-2026") },
+            title = { Text("Bienvenido a LEO-2026") },
             text = {
                 Column {
                     Text("Por favor identifícate para personalizar tu experiencia.", color = Color.White, modifier = Modifier.padding(bottom = 16.dp))
-                    TextField(value = firstName, onValueChange = { firstName = it }, label = { Text("Nombre") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
+                    TextField(
+                        value = inputName, 
+                        onValueChange = { inputName = it }, 
+                        label = { Text("Nombre") }, 
+                        colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    TextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Apellido") }, colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent))
+                    TextField(
+                        value = inputLastName, 
+                        onValueChange = { inputLastName = it }, 
+                        label = { Text("Apellido") }, 
+                        colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent)
+                    )
                 }
             },
             confirmButton = {
-                Button(onClick = { if (firstName.isNotBlank() && lastName.isNotBlank()) { viewModel.updateProfile(firstName, lastName); showRegistration = false } }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)) {
+                Button(
+                    onClick = { 
+                        if (inputName.isNotBlank() && inputLastName.isNotBlank()) { 
+                            viewModel.updateProfile(inputName, inputLastName)
+                        } 
+                    }, 
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00), contentColor = Color.Black)
+                ) {
                     Text("REGISTRAR", fontWeight = FontWeight.Black)
                 }
             }
