@@ -1,19 +1,25 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-*.hprof
-*.zip
-*.rar
+## Android / Gradle (CRITICAL)
+/build/
+/app/build/
+.gradle/
 local.properties
 
-# BLINDAJE DE SECRETOS MCP
+## IDE
+.idea/
+*.iml
+
+## OS
+.DS_Store
+
+## Logs / Dumps
+*.hprof
+
+## Archives
+*.zip
+*.rar
+
+## Android Studio captures
+/captures
+
+## MCP secrets
 mcp-stitch-bridge.json
